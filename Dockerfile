@@ -21,7 +21,6 @@ COPY src ./src
 COPY migrations ./migrations
 
 # The built dashboard is static files — src/index.js serves them from
-# dashboard/dist if present (see its comment on dashboardDistPath).
 COPY --from=dashboard-build /dashboard/dist ./dashboard/dist
 
 ENV NODE_ENV=production

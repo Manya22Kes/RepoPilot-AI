@@ -31,11 +31,6 @@ services:
       - redis-data:/data
 
   postgres:
-    # Vanilla postgres:16-alpine doesn't include pgvector — this is the
-    # official pgvector project's image, same Postgres 16 plus the
-    # extension pre-installed (Phase 3's migrations still run
-    # `CREATE EXTENSION IF NOT EXISTS vector`, this image just makes that
-    # extension available to create).
     image: pgvector/pgvector:pg16
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-github_ops_agent}
