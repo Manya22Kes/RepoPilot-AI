@@ -1,0 +1,131 @@
+const request = require('supertest');
+const app = require('../src/index');
+const { triageQueue } = require('../src/queue/triageQueue');
+const { startTriageRun, completeTriageRun, failTriageRun } = require('../src/db/triageRuns');
+const { recordLlmCall } = require('../src/db/llmCalls');
+const { createPendingAction } = require('../src/db/pendingActions');
+const pool = require('../src/db/pool');
+
+const CORRECT_PASSWORD = 'test-admin-password';
+const REPO = 'acme/api-runs-test-repo';
+
+async function getToken() {
+  const res = await request(app).post('/api/auth/login').send({ password: CORRECT_PASSWORD });
+  return res.body.token;
+}
+
+describe('runs API (integration: real Postgres)', () => {
+  let token;
+
+  beforeAll(async () => {
+    token = await getToken();
+  });
+
+  afterAll(async () => {
+    await pool.query(
+      'DELETE FROM pending_actions WHERE triage_run_id IN (SELECT id FROM triage_runs WHERE repo_full_name = $1)',
+      [REPO]
+    );
+    await pool.query(
+      'DELETE FROM llm_calls WHERE triage_run_id IN (SELECT id FROM triage_runs WHERE repo_full_name = $1)',
+      [REPO]
+    );
+    await pool.query('DELETE FROM triage_runs WHERE repo_full_name = $1', [REPO]);
+    await triageQueue.close();
+    await pool.end();
+  });
+
+  describe('GET /api/runs', () => {
+    it('lists runs for a repo, most recent first, with pagination metadata', async () => {
+      const id1 = await startTriageRun({
+        installationId: 1,
+        repoFullName: REPO,
+        eventName: 'issues',
+        eventAction: 'opened',
+        deliveryId: 'runs-api-1',
+        subjectType: 'issue',
+        subjectNumber: 1,
+      });
+      await completeTriageRun(id1, { labels: ['bug'] });
+
+      const id2 = await startTriageRun({
+        installationId: 1,
+        repoFullName: REPO,
+        eventName: 'issues',
+        eventAction: 'opened',
+        deliveryId: 'runs-api-2',
+        subjectType: 'issue',
+        subjectNumber: 2,
+      });
+      await failTriageRun(id2, 'boom');
+
+      const res = await request(app).get(`/api/runs?repo=${REPO}`).set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.total).toBe(2);
+      expect(res.body.runs.map((r) => r.id)).toEqual([id2, id1]); // most recent first
+      expect(res.body.runs[0].status).toBe('failed');
+      expect(res.body.runs[1].status).toBe('success');
+    });
+
+    it('filters by status', async () => {
+      const res = await request(app)
+        .get(`/api/runs?repo=${REPO}&status=failed`)
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.runs.every((r) => r.status === 'failed')).toBe(true);
+    });
+
+    it('requires auth', async () => {
+      const res = await request(app).get('/api/runs');
+      expect(res.status).toBe(401);
+    });
+  });
+
+  describe('GET /api/runs/:id', () => {
+    it('returns a run with its associated llm_calls and pending_actions', async () => {
+      const runId = await startTriageRun({
+        installationId: 1,
+        repoFullName: REPO,
+        eventName: 'issues',
+        eventAction: 'opened',
+        deliveryId: 'runs-api-detail',
+        subjectType: 'issue',
+        subjectNumber: 3,
+      });
+      await recordLlmCall({
+        triageRunId: runId,
+        purpose: 'issue_classification',
+        provider: 'gemini',
+        model: 'gemini-1.5-flash',
+        promptTokens: 100,
+        completionTokens: 20,
+        estimatedCostUsd: 0.00001,
+      });
+      await createPendingAction({
+        triageRunId: runId,
+        installationId: 1,
+        repoFullName: REPO,
+        issueNumber: 3,
+        actionType: 'close_as_duplicate',
+        payload: { matchedIssueNumber: 1, confidence: 0.9, reasoning: 'x' },
+      });
+      await completeTriageRun(runId, { labels: ['bug'] });
+
+      const res = await request(app).get(`/api/runs/${runId}`).set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.run.id).toBe(runId);
+      expect(res.body.llmCalls).toHaveLength(1);
+      expect(res.body.llmCalls[0].purpose).toBe('issue_classification');
+      expect(res.body.pendingActions).toHaveLength(1);
+      expect(res.body.pendingActions[0].action_type).toBe('close_as_duplicate');
+    });
+
+    it('returns 404 for a nonexistent run', async () => {
+      const res = await request(app).get('/api/runs/999999999').set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(404);
+    });
+  });
+});

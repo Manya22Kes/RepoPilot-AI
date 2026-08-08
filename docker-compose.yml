@@ -1,0 +1,51 @@
+version: "3.9"
+
+services:
+  app:
+    build: . # multi-stage build also compiles dashboard/ and bundles it in — see Dockerfile
+    command: node src/index.js
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - postgres
+    restart: unless-stopped
+
+  worker:
+    build: .
+    command: node src/worker.js
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - postgres
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-data:/data
+
+  postgres:
+    # Vanilla postgres:16-alpine doesn't include pgvector — this is the
+    # official pgvector project's image, same Postgres 16 plus the
+    # extension pre-installed (Phase 3's migrations still run
+    # `CREATE EXTENSION IF NOT EXISTS vector`, this image just makes that
+    # extension available to create).
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-github_ops_agent}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-github_ops_agent}
+      POSTGRES_DB: ${POSTGRES_DB:-github_ops_agent}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  redis-data:
+  postgres-data:

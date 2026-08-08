@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
+      postgres:
+        # Vanilla postgres:16-alpine doesn't include pgvector — this is the
+        # official pgvector project's image, same Postgres 16 plus the
+        # extension pre-installed.
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: github_ops_agent
+          POSTGRES_PASSWORD: github_ops_agent
+          POSTGRES_DB: github_ops_agent
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
+    env:
+      REDIS_URL: redis://localhost:6379
+      DATABASE_URL: postgres://github_ops_agent:github_ops_agent@localhost:5432/github_ops_agent
+      # Dummy GitHub App + LLM credentials — CI never talks to the real
+      # GitHub or Gemini/OpenAI APIs; these only need to satisfy config's
+      # required-var checks. Tests that actually exercise JWT signing or
+      # LLM calls generate their own throwaway RSA key / mock fetch.
+      GITHUB_APP_ID: "999999"
+      GITHUB_WEBHOOK_SECRET: ci-test-secret
+      GITHUB_PRIVATE_KEY_BASE64: dGVzdC1rZXktbm90LXJlYWw=
+      GEMINI_API_KEY: ci-test-gemini-key-not-real
+      DASHBOARD_ADMIN_PASSWORD: ci-test-admin-password
+      DASHBOARD_JWT_SECRET: ci-test-dashboard-jwt-secret-not-real
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Run migrations
+        run: npm run migrate
+
+      - name: Test
+        run: npm test
+
+  dashboard:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dashboard
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  build-docker-image:
+    runs-on: ubuntu-latest
+    needs: [lint-and-test, dashboard]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t github-ops-agent:ci .
