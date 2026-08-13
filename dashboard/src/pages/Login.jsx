@@ -33,7 +33,7 @@ export default function Login() {
         background: 'var(--bg)',
       }}
     >
-      <form onSubmit={handleSubmit} className="card" style={{ padding: 32, width: 340 }}>
+      <form onSubmit={handleSubmit} className="card page-enter" style={{ padding: 32, width: 340 }}>
         <div style={{ marginBottom: 24 }}>
           <div style={{ fontWeight: 700, fontSize: 17, letterSpacing: '-0.01em' }}>RepoPilot AI</div>
           <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>

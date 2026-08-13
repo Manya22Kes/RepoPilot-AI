@@ -1,5 +1,7 @@
-import { NavLink, useNavigate, Outlet } from 'react-router-dom';
+import { useState } from 'react';
+import { NavLink, useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { clearToken } from '../api.js';
+import Logo from './Logo.jsx';
 
 const NAV_ITEMS = [
   { to: '/repos', label: 'Repos' },
@@ -10,6 +12,8 @@ const NAV_ITEMS = [
 
 export default function Layout() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   function handleLogout() {
     clearToken();
@@ -18,7 +22,10 @@ export default function Layout() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
+      {menuOpen && <div className="sidebar-overlay" onClick={() => setMenuOpen(false)} />}
+
       <aside
+        className={`sidebar${menuOpen ? ' open' : ''}`}
         style={{
           width: 220,
           flexShrink: 0,
@@ -29,9 +36,12 @@ export default function Layout() {
           flexDirection: 'column',
         }}
       >
-        <div style={{ padding: '0 8px', marginBottom: 28 }}>
-          <div style={{ fontWeight: 700, fontSize: 15, letterSpacing: '-0.01em' }}>RepoPilot AI</div>
-          <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>Ops dashboard</div>
+        <div style={{ padding: '0 8px', marginBottom: 28, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Logo size={26} />
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 15, letterSpacing: '-0.01em' }}>RepoPilot AI</div>
+            <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>Ops dashboard</div>
+          </div>
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -39,6 +49,7 @@ export default function Layout() {
             <NavLink
               key={item.to}
               to={item.to}
+              onClick={() => setMenuOpen(false)}
               style={({ isActive }) => ({
                 padding: '9px 12px',
                 borderRadius: 'var(--radius-sm)',
@@ -47,6 +58,7 @@ export default function Layout() {
                 color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
                 background: isActive ? 'var(--accent-soft)' : 'transparent',
                 textDecoration: 'none',
+                transition: 'background-color 0.15s ease, color 0.15s ease',
               })}
             >
               {item.label}
@@ -56,13 +68,24 @@ export default function Layout() {
 
         <div style={{ flex: 1 }} />
 
-        <button className="btn" onClick={handleLogout} style={{ fontSize: 13 }}>
+        <button className="btn" onClick={handleLogout} style={{ fontSize: 13, alignSelf: 'flex-start' }}>
           Log out
         </button>
       </aside>
 
       <main style={{ flex: 1, padding: '32px 40px', minWidth: 0 }}>
-        <Outlet />
+        <button
+          className="btn mobile-menu-btn"
+          onClick={() => setMenuOpen(true)}
+          style={{ marginBottom: 16 }}
+          aria-label="Open menu"
+        >
+          ☰ Menu
+        </button>
+
+        <div key={location.pathname} className="page-enter">
+          <Outlet />
+        </div>
       </main>
     </div>
   );

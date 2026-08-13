@@ -75,46 +75,48 @@ export default function ReposPage() {
       {error && <div style={{ color: 'var(--danger)', marginBottom: 16 }}>{error}</div>}
 
       <div className="card">
-        <table>
-          <thead>
-            <tr>
-              <th>Repository</th>
-              {TOGGLES.map((t) => (
-                <th key={t.key}>{t.label}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {repos === null && (
+        <div className="table-scroll">
+          <table>
+            <thead>
               <tr>
-                <td colSpan={TOGGLES.length + 1} style={{ color: 'var(--text-tertiary)' }}>
-                  Loading…
-                </td>
-              </tr>
-            )}
-            {repos?.length === 0 && (
-              <tr>
-                <td colSpan={TOGGLES.length + 1} style={{ color: 'var(--text-tertiary)' }}>
-                  No repos found. Install the GitHub App on a repository to see it here.
-                </td>
-              </tr>
-            )}
-            {repos?.map((repo) => (
-              <tr key={repo.repoFullName}>
-                <td className="mono">{repo.repoFullName}</td>
+                <th>Repository</th>
                 {TOGGLES.map((t) => (
-                  <td key={t.key}>
-                    <Toggle
-                      checked={repo.settings[t.key]}
-                      disabled={savingKey === `${repo.repoFullName}:${t.key}`}
-                      onChange={(value) => handleToggle(repo, t.key, value)}
-                    />
-                  </td>
+                  <th key={t.key}>{t.label}</th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {repos === null && (
+                <tr>
+                  <td colSpan={TOGGLES.length + 1} style={{ color: 'var(--text-tertiary)' }}>
+                    Loading…
+                  </td>
+                </tr>
+              )}
+              {repos?.length === 0 && (
+                <tr>
+                  <td colSpan={TOGGLES.length + 1} style={{ color: 'var(--text-tertiary)' }}>
+                    No repos found. Install the GitHub App on a repository to see it here.
+                  </td>
+                </tr>
+              )}
+              {repos?.map((repo) => (
+                <tr key={repo.repoFullName}>
+                  <td className="mono">{repo.repoFullName}</td>
+                  {TOGGLES.map((t) => (
+                    <td key={t.key}>
+                      <Toggle
+                        checked={repo.settings[t.key]}
+                        disabled={savingKey === `${repo.repoFullName}:${t.key}`}
+                        onChange={(value) => handleToggle(repo, t.key, value)}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

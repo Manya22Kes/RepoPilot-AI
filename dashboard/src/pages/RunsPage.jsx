@@ -68,53 +68,55 @@ export default function RunsPage() {
       {error && <div style={{ color: 'var(--danger)', marginBottom: 16 }}>{error}</div>}
 
       <div className="card">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Repo</th>
-              <th>Event</th>
-              <th>Status</th>
-              <th>Started</th>
-            </tr>
-          </thead>
-          <tbody>
-            {runs === null && (
+        <div className="table-scroll">
+          <table>
+            <thead>
               <tr>
-                <td colSpan={5} style={{ color: 'var(--text-tertiary)' }}>
-                  Loading…
-                </td>
+                <th>ID</th>
+                <th>Repo</th>
+                <th>Event</th>
+                <th>Status</th>
+                <th>Started</th>
               </tr>
-            )}
-            {runs?.length === 0 && (
-              <tr>
-                <td colSpan={5} style={{ color: 'var(--text-tertiary)' }}>
-                  No runs match these filters.
-                </td>
-              </tr>
-            )}
-          {runs?.map((run) => (
-              <tr
-                key={run.id}
-                onClick={() => navigate(`/runs/${run.id}`)}
-                style={{ cursor: 'pointer' }}
-              >
-                <td className="mono" style={{ color: 'var(--accent)' }}>
-                  #{run.id}
-                </td>
-                <td className="mono">{run.repo_full_name || '—'}</td>
-                <td>
-                  {run.event_name}
-                  {run.event_action ? ` · ${run.event_action}` : ''}
-                </td>
-                <td>
-                  <StatusBadge status={run.status} />
-                </td>
-                <td style={{ color: 'var(--text-secondary)' }}>{formatTime(run.started_at)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {runs === null && (
+                <tr>
+                  <td colSpan={5} style={{ color: 'var(--text-tertiary)' }}>
+                    Loading…
+                  </td>
+                </tr>
+              )}
+              {runs?.length === 0 && (
+                <tr>
+                  <td colSpan={5} style={{ color: 'var(--text-tertiary)' }}>
+                    No runs match these filters.
+                  </td>
+                </tr>
+              )}
+              {runs?.map((run) => (
+                <tr
+                  key={run.id}
+                  onClick={() => navigate(`/runs/${run.id}`)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <td className="mono" style={{ color: 'var(--accent)' }}>
+                    #{run.id}
+                  </td>
+                  <td className="mono">{run.repo_full_name || '—'}</td>
+                  <td>
+                    {run.event_name}
+                    {run.event_action ? ` · ${run.event_action}` : ''}
+                  </td>
+                  <td>
+                    <StatusBadge status={run.status} />
+                  </td>
+                  <td style={{ color: 'var(--text-secondary)' }}>{formatTime(run.started_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {total > 0 && (
