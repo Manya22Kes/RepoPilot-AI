@@ -15,10 +15,12 @@ process.env.GITHUB_PRIVATE_KEY_BASE64 =
 // docker-compose's bundled Postgres service and .env.example use, so
 // `npm test` works out of the box against `docker compose up -d postgres`
 // without anyone needing to export DATABASE_URL manually.
+// Matches docker-compose.yml's host port mappings (postgres -> 5433,
+// redis -> 6380), not the services' standard default ports.
 process.env.DATABASE_URL =
   process.env.DATABASE_URL ||
-  'postgres://github_ops_agent:github_ops_agent@localhost:5432/github_ops_agent';
-process.env.REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+  'postgres://github_ops_agent:github_ops_agent@localhost:5433/github_ops_agent';
+process.env.REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6380';
 
 // Phase 3: config requires at least one LLM provider key present. Tests
 // that actually exercise LLM/embedding calls mock global.fetch rather

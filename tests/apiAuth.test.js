@@ -71,4 +71,16 @@ describe('dashboard auth', () => {
       expect(res.status).toBe(200);
     });
   });
+
+  // Runs last: burns through the login rate limiter's quota for this IP,
+  // which would otherwise block the successful-login tests above.
+  describe('login rate limiting', () => {
+    it('blocks further attempts after 5 failed logins from the same IP', async () => {
+      for (let i = 0; i < 5; i += 1) {
+        await request(app).post('/api/auth/login').send({ password: 'wrong' });
+      }
+      const res = await request(app).post('/api/auth/login').send({ password: 'wrong' });
+      expect(res.status).toBe(429);
+    });
+  });
 });

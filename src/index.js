@@ -6,13 +6,21 @@ const config = require("./config");
 const webhookRoutes = require("./routes/webhooks");
 const apiRoutes = require("./api");
 const logger = require("./utils/logger");
+const pool = require("./db/pool");
+const redisConnection = require("./queue/connection");
+const { checkHealth } = require("./utils/healthCheck");
 
 const app = express();
 
 app.use(helmet());
 
-app.get("/health", (req, res) => {
-  res.json({ status: "ok" });
+app.get("/health", async (req, res) => {
+  const result = await checkHealth({ pool, redisConnection });
+  res.status(result.healthy ? 200 : 503).json({
+    status: result.healthy ? "ok" : "degraded",
+    postgres: result.postgres,
+    redis: result.redis,
+  });
 });
 app.get("/", (req, res) => {
   res.redirect("/dashboard");

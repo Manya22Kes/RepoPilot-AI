@@ -4,10 +4,10 @@ const { triageQueue } = require('../src/queue/triageQueue');
 const pool = require('../src/db/pool');
 
 describe('GET /health', () => {
-  it('returns 200 ok', async () => {
+  it('returns 200 ok when dependencies are reachable', async () => {
     const res = await request(app).get('/health');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ status: 'ok' });
+    expect(res.body).toEqual({ status: 'ok', postgres: 'ok', redis: 'ok' });
   });
 
   afterAll(async () => {
