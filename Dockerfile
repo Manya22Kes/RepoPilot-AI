@@ -11,6 +11,7 @@ RUN npm run build
 
 # --- Stage 2: the backend runtime ---
 FROM node:18-alpine
+RUN apk add --no-cache postgresql16-client
 
 WORKDIR /app
 

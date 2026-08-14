@@ -76,6 +76,11 @@ function loadConfig() {
       adminPassword: required("DASHBOARD_ADMIN_PASSWORD"),
       jwtSecret: required("DASHBOARD_JWT_SECRET"),
     },
+    backup: {
+      dir: process.env.BACKUP_DIR || "./backups",
+      retentionDays: Number(process.env.BACKUP_RETENTION_DAYS) || 7,
+      cron: process.env.DB_BACKUP_CRON || "0 3 * * *",
+    },
   };
 }
 

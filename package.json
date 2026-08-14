@@ -12,6 +12,7 @@
     "dev": "nodemon src/index.js",
     "worker": "node src/worker.js",
     "migrate": "node src/db/runMigrations.js",
+    "backup": "node -e \"require('./src/backup/runBackup').runBackup().then(r => { console.log('Backup complete:', r.filename); process.exit(0); }).catch(e => { console.error(e); process.exit(1); })\"",
     "test": "jest --runInBand",
     "lint": "eslint src tests"
   },

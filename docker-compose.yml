@@ -18,6 +18,8 @@ services:
     command: node src/worker.js
     env_file:
       - .env
+    volumes:
+      - ./backups:/app/backups
     depends_on:
       - redis
       - postgres

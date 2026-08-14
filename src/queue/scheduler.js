@@ -15,6 +15,13 @@ async function registerScheduledJobs() {
   );
 
   logger.info('Registered scheduled stale-PR scan', { cron: config.stalePrScan.cron });
+
+  await enqueueTriageJob(
+    'db-backup',
+    {},
+    { jobId: 'db-backup-repeat', repeat: { pattern: config.backup.cron } }
+  );
+  logger.info('Registered scheduled database backup', { cron: config.backup.cron });
 }
 
 module.exports = { registerScheduledJobs, STALE_PR_SCAN_JOB_ID };
