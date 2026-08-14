@@ -44,7 +44,7 @@ const TOGGLE_KEYS = [
 router.put('/repos/:owner/:repo/settings', async (req, res, next) => {
   try {
     const repoFullName = `${req.params.owner}/${req.params.repo}`;
-    const { installationId, ...body } = req.body || {};
+    const { installationId, customLabels, ...body } = req.body || {};
 
     if (!installationId) {
       return res.status(400).json({ error: 'installationId is required' });
@@ -53,6 +53,19 @@ router.put('/repos/:owner/:repo/settings', async (req, res, next) => {
     const updates = {};
     for (const key of TOGGLE_KEYS) {
       if (typeof body[key] === 'boolean') updates[key] = body[key];
+    }
+
+    if (customLabels !== undefined) {
+      if (customLabels === null) {
+        updates.customLabels = null;
+      } else if (Array.isArray(customLabels)) {
+        const cleaned = [
+          ...new Set(customLabels.map((l) => String(l).trim().toLowerCase()).filter(Boolean)),
+        ].slice(0, 10);
+        updates.customLabels = cleaned.length > 0 ? cleaned : null;
+      } else {
+        return res.status(400).json({ error: 'customLabels must be an array of strings or null' });
+      }
     }
 
     const settings = await upsertRepoSettings(repoFullName, installationId, updates);

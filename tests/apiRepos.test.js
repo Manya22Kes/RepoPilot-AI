@@ -68,6 +68,7 @@ describe('repos API (integration: real Postgres, mocked GitHub)', () => {
             stalePrScanEnabled: true,
             docsSyncEnabled: true,
             releaseNotesEnabled: true,
+            customLabels: null,
           },
         },
       ]);
@@ -113,6 +114,26 @@ describe('repos API (integration: real Postgres, mocked GitHub)', () => {
     it('requires auth on the settings routes too', async () => {
       const res = await request(app).get(`/api/repos/acme/api-test-repo/settings`);
       expect(res.status).toBe(401);
+    });
+
+    it('accepts a custom labels array and returns it back', async () => {
+      const res = await request(app)
+        .put(`/api/repos/acme/api-test-repo/settings`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ installationId: 321, customLabels: ['security', 'PERFORMANCE', 'security'] });
+
+      expect(res.status).toBe(200);
+      // deduplicated and lowercased
+      expect(res.body.settings.customLabels).toEqual(['security', 'performance']);
+    });
+
+    it('rejects a non-array customLabels value', async () => {
+      const res = await request(app)
+        .put(`/api/repos/acme/api-test-repo/settings`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ installationId: 321, customLabels: 'not-an-array' });
+
+      expect(res.status).toBe(400);
     });
   });
 });

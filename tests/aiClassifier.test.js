@@ -89,3 +89,52 @@ describe('classifyIssueWithAI', () => {
     expect(result.labels).toContain('docs');
   });
 });
+
+describe('classifyIssueWithAI with custom labels', () => {
+  it('validates against a custom label set instead of the built-in four', async () => {
+    const llmClient = fakeLLMClient(async () => ({
+      content: JSON.stringify({ labels: ['security'], priority: 'high', reasoning: 'x' }),
+      provider: 'gemini',
+    }));
+
+    const result = await classifyIssueWithAI(
+      llmClient,
+      { title: 'Possible vulnerability', body: '' },
+      { labels: ['security', 'performance', 'ux'] }
+    );
+
+    expect(result.labels).toEqual(['security']);
+    expect(result.source).toBe('ai');
+  });
+
+  it('rejects a label outside the custom set and falls back', async () => {
+    const llmClient = fakeLLMClient(async () => ({
+      content: JSON.stringify({ labels: ['bug'], priority: 'high', reasoning: 'x' }), // 'bug' isn't in the custom set below
+    }));
+
+    const result = await classifyIssueWithAI(
+      llmClient,
+      { title: 'x', body: '' },
+      { labels: ['security', 'performance'] }
+    );
+
+    expect(result.source).toBe('rule-based-fallback-no-category');
+    expect(result.labels).toEqual([]);
+  });
+
+  it('applies no category label (only priority) when every provider fails with a custom label set', async () => {
+    const llmClient = fakeLLMClient(async () => {
+      throw new Error('all providers down');
+    });
+
+    const result = await classifyIssueWithAI(
+      llmClient,
+      { title: 'Slow page load', body: '' },
+      { labels: ['performance', 'ux'] }
+    );
+
+    expect(result.source).toBe('rule-based-fallback-no-category');
+    expect(result.labels).toEqual([]);
+    expect(result.priority).toBeDefined();
+  });
+});

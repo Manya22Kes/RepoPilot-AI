@@ -52,4 +52,18 @@ describe('repo_settings (integration, real Postgres)', () => {
     const { rows } = await pool.query('SELECT installation_id FROM repo_settings WHERE repo_full_name = $1', [REPO]);
     expect(Number(rows[0].installation_id)).toBe(456);
   });
+
+  it('round-trips a custom label list', async () => {
+    const settings = await upsertRepoSettings(REPO, 123, { customLabels: ['security', 'performance'] });
+    expect(settings.customLabels).toEqual(['security', 'performance']);
+
+    const fetched = await getRepoSettings(REPO);
+    expect(fetched.customLabels).toEqual(['security', 'performance']);
+  });
+
+  it('resetting customLabels to null goes back to the default set', async () => {
+    await upsertRepoSettings(REPO, 123, { customLabels: ['a', 'b'] });
+    const settings = await upsertRepoSettings(REPO, 123, { customLabels: null });
+    expect(settings.customLabels).toBeNull();
+  });
 });

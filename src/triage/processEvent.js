@@ -38,7 +38,10 @@ async function processIssueOpened(
   const issue = await getIssue(installationId, repoFullName, number);
   const issueContext = { title: issue.title, body: issue.body || '' };
 
-  const classification = await classifyIssueWithAI(llmClient, issueContext);
+  const settings = await getRepoSettings(repoFullName);
+  const classification = await classifyIssueWithAI(llmClient, issueContext, {
+    labels: settings.customLabels || undefined,
+  });
 
   const candidates = await findEmbeddingDuplicateCandidates({
     embeddingClient,

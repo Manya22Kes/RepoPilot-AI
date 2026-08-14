@@ -79,4 +79,6 @@ function estimatePriority({ title = '', body = '' }) {
   return DEFAULT_PRIORITY;
 }
 
-module.exports = { classifyIssue, estimatePriority, FALLBACK_LABEL, DEFAULT_PRIORITY };
+const DEFAULT_LABELS = LABEL_RULES.map((rule) => rule.label);
+
+module.exports = { classifyIssue, estimatePriority, FALLBACK_LABEL, DEFAULT_PRIORITY, DEFAULT_LABELS };
