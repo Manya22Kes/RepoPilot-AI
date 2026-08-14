@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../api.js';
 import StatusBadge from '../components/StatusBadge.jsx';
+import CopyButton from '../components/CopyButton.jsx';
 
 export default function RunDetailPage() {
   const { id } = useParams();
@@ -30,6 +31,7 @@ export default function RunDetailPage() {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '10px 0 24px' }}>
         <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Run #{run.id}</h1>
+        <CopyButton value={String(run.id)} label="Copy ID" />
         <StatusBadge status={run.status} />
       </div>
 
@@ -46,7 +48,10 @@ export default function RunDetailPage() {
           </dd>
 
           <dt style={{ color: 'var(--text-secondary)' }}>Delivery ID</dt>
-          <dd className="mono" style={{ margin: 0 }}>{run.delivery_id || '—'}</dd>
+          <dd className="mono" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+            {run.delivery_id || '—'}
+            {run.delivery_id && <CopyButton value={run.delivery_id} />}
+          </dd>
 
           <dt style={{ color: 'var(--text-secondary)' }}>Started</dt>
           <dd style={{ margin: 0 }}>{new Date(run.started_at).toLocaleString()}</dd>

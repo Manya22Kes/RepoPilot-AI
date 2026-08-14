@@ -81,6 +81,38 @@ describe('runs API (integration: real Postgres)', () => {
       const res = await request(app).get('/api/runs');
       expect(res.status).toBe(401);
     });
+
+    it('finds a run by exact numeric run ID', async () => {
+      const id = await startTriageRun({
+        installationId: 1,
+        repoFullName: REPO,
+        eventName: 'issues',
+        eventAction: 'opened',
+        deliveryId: 'search-test-numeric',
+        subjectType: 'issue',
+        subjectNumber: 5,
+      });
+
+      const res = await request(app).get(`/api/runs?search=${id}`).set('Authorization', `Bearer ${token}`);
+      expect(res.body.runs.map((r) => r.id)).toContain(id);
+    });
+
+    it('finds a run by partial delivery ID', async () => {
+      await startTriageRun({
+        installationId: 1,
+        repoFullName: REPO,
+        eventName: 'issues',
+        eventAction: 'opened',
+        deliveryId: 'unique-searchable-delivery-abc123',
+        subjectType: 'issue',
+        subjectNumber: 6,
+      });
+
+      const res = await request(app)
+        .get(`/api/runs?repo=${REPO}&search=searchable-delivery`)
+        .set('Authorization', `Bearer ${token}`);
+      expect(res.body.runs.some((r) => r.delivery_id === 'unique-searchable-delivery-abc123')).toBe(true);
+    });
   });
 
   describe('GET /api/runs/:id', () => {

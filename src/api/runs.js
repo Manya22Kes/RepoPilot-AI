@@ -15,6 +15,7 @@ router.get('/runs', async (req, res, next) => {
     const { runs, total } = await listTriageRuns({
       repoFullName: req.query.repo || undefined,
       status: req.query.status || undefined,
+      search: req.query.search || undefined,
       limit,
       offset,
     });

@@ -15,19 +15,26 @@ export default function RunsPage() {
   const [page, setPage] = useState(0);
   const [repoFilter, setRepoFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     setRuns(null);
     api
-      .listRuns({ repo: repoFilter || undefined, status: statusFilter || undefined, limit: PAGE_SIZE, offset: page * PAGE_SIZE })
+      .listRuns({
+        repo: repoFilter || undefined,
+        status: statusFilter || undefined,
+        search: searchTerm || undefined,
+        limit: PAGE_SIZE,
+        offset: page * PAGE_SIZE,
+      })
       .then((data) => {
         setRuns(data.runs);
         setTotal(data.total);
       })
       .catch((err) => setError(err.message));
-  }, [repoFilter, statusFilter, page]);
+  }, [repoFilter, statusFilter, searchTerm, page]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -63,6 +70,16 @@ export default function RunsPage() {
           <option value="failed">Failed</option>
           <option value="running">Running</option>
         </select>
+        <input
+          className="input"
+          placeholder="Search by run ID or delivery ID"
+          value={searchTerm}
+          onChange={(e) => {
+            setPage(0);
+            setSearchTerm(e.target.value);
+          }}
+          style={{ maxWidth: 260 }}
+        />
       </div>
 
       {error && <div style={{ color: 'var(--danger)', marginBottom: 16 }}>{error}</div>}

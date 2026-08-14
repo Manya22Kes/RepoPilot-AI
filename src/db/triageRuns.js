@@ -38,7 +38,7 @@ async function getTriageRun(id) {
   return rows[0] || null;
 }
 
-async function listTriageRuns({ repoFullName, status, limit = 50, offset = 0 } = {}) {
+async function listTriageRuns({ repoFullName, status, search, limit = 50, offset = 0 } = {}) {
   const conditions = [];
   const params = [];
 
@@ -49,6 +49,16 @@ async function listTriageRuns({ repoFullName, status, limit = 50, offset = 0 } =
   if (status) {
     params.push(status);
     conditions.push(`status = $${params.length}`);
+  }
+  if (search) {
+    const trimmed = search.trim();
+    if (/^\d+$/.test(trimmed)) {
+      params.push(Number(trimmed));
+      conditions.push(`id = $${params.length}`);
+    } else {
+      params.push(`%${trimmed}%`);
+      conditions.push(`delivery_id ILIKE $${params.length}`);
+    }
   }
 
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';

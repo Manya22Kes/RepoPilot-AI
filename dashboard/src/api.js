@@ -57,10 +57,11 @@ export const api = {
       body: JSON.stringify({ installationId, ...updates }),
     }),
 
-  listRuns: ({ repo, status, limit = 50, offset = 0 } = {}) => {
+  listRuns: ({ repo, status, search, limit = 50, offset = 0 } = {}) => {
     const params = new URLSearchParams();
     if (repo) params.set('repo', repo);
     if (status) params.set('status', status);
+    if (search) params.set('search', search);
     params.set('limit', limit);
     params.set('offset', offset);
     return request(`/runs?${params.toString()}`);
