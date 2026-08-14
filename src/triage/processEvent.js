@@ -7,6 +7,7 @@ const { processPullRequestMerged } = require('./docsSync');
 const { processTagPush } = require('./releaseNotes');
 const { runStalePrScan } = require('./staleProcessing');
 const { runBackup } = require('../backup/runBackup');
+const { sendWeeklyDigest } = require('../digest/sendDigest');
 const { createPendingAction } = require('../db/pendingActions');
 const { getRepoSettings } = require('../db/repoSettings');
 const {
@@ -23,6 +24,7 @@ function subjectTypeForEvent(eventName) {
   if (eventName === 'push') return 'tag';
   if (eventName === 'stale-pr-scan') return 'scheduled_scan';
   if (eventName === 'db-backup') return 'scheduled_backup';
+  if (eventName === 'weekly-digest') return 'scheduled_digest';
   return 'installation';
 }
 
@@ -160,6 +162,9 @@ async function processEvent({ name, data }, deps = {}) {
 
     case 'db-backup':
       return runBackup();
+
+    case 'weekly-digest':
+      return sendWeeklyDigest();
 
     default:
       logger.warn('Received unknown event name', { name });

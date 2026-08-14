@@ -81,6 +81,9 @@ function loadConfig() {
       retentionDays: Number(process.env.BACKUP_RETENTION_DAYS) || 7,
       cron: process.env.DB_BACKUP_CRON || "0 3 * * *",
     },
+    digest: {
+      cron: process.env.DIGEST_CRON || "0 9 * * 1", // Monday 9am
+    },
   };
 }
 

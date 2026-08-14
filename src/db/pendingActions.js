@@ -48,10 +48,16 @@ async function listPendingActionsForRun(triageRunId) {
   return rows;
 }
 
+async function countPendingActions(status = 'pending_approval') {
+  const { rows } = await pool.query('SELECT count(*) FROM pending_actions WHERE status = $1', [status]);
+  return Number(rows[0].count);
+}
+
 module.exports = {
   createPendingAction,
   resolvePendingAction,
   getPendingActionById,
   listPendingActions,
   listPendingActionsForRun,
+  countPendingActions,
 };

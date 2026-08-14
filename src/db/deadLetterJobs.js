@@ -8,4 +8,12 @@ async function recordDeadLetterJob({ queueName, jobName, jobId, data, failedReas
   );
 }
 
-module.exports = { recordDeadLetterJob };
+async function countDeadLettersSince(days = 7) {
+  const { rows } = await pool.query(
+    `SELECT count(*) FROM dead_letter_jobs WHERE failed_at > now() - ($1 || ' days')::interval`,
+    [days]
+  );
+  return Number(rows[0].count);
+}
+
+module.exports = { recordDeadLetterJob, countDeadLettersSince };

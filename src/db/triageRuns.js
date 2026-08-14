@@ -78,6 +78,32 @@ async function listTriageRuns({ repoFullName, status, search, limit = 50, offset
   return { runs: rows, total: Number(countResult.rows[0].count) };
 }
 
+async function getRunStatsSince(days = 7) {
+  const [statusResult, repoResult] = await Promise.all([
+    pool.query(
+      `SELECT status, count(*) FROM triage_runs WHERE started_at > now() - ($1 || ' days')::interval GROUP BY status`,
+      [days]
+    ),
+    pool.query(
+      `SELECT repo_full_name, count(*) AS count FROM triage_runs
+       WHERE started_at > now() - ($1 || ' days')::interval AND repo_full_name IS NOT NULL
+       GROUP BY repo_full_name ORDER BY count DESC LIMIT 5`,
+      [days]
+    ),
+  ]);
+
+  const byStatus = {};
+  for (const row of statusResult.rows) byStatus[row.status] = Number(row.count);
+
+  return {
+    total: Object.values(byStatus).reduce((a, b) => a + b, 0),
+    success: byStatus.success || 0,
+    failed: byStatus.failed || 0,
+    running: byStatus.running || 0,
+    topRepos: repoResult.rows.map((r) => ({ repo: r.repo_full_name, count: Number(r.count) })),
+  };
+}
+
 async function hasSuccessfulRun(deliveryId) {
   if (!deliveryId) return false;
   const { rows } = await pool.query(
@@ -94,4 +120,5 @@ module.exports = {
   getTriageRun,
   hasSuccessfulRun,
   listTriageRuns,
+  getRunStatsSince,
 };

@@ -80,6 +80,6 @@ describe('sendAlert with a Slack webhook configured', () => {
     });
 
     await expect(sendAlert('x', {})).resolves.toBeUndefined();
-    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Failed to send Slack alert'), expect.any(Object));
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Failed to post to Slack'), expect.any(Object));
   });
 });
