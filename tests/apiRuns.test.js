@@ -5,12 +5,15 @@ const { startTriageRun, completeTriageRun, failTriageRun } = require('../src/db/
 const { recordLlmCall } = require('../src/db/llmCalls');
 const { createPendingAction } = require('../src/db/pendingActions');
 const pool = require('../src/db/pool');
+const { createUser } = require('../src/db/users');
+const { hashPassword } = require('../src/utils/passwords');
 
-const CORRECT_PASSWORD = 'test-admin-password';
+const TEST_EMAIL = 'apiruns-test@example.com';
+const TEST_PASSWORD = 'test-admin-password';
 const REPO = 'acme/api-runs-test-repo';
 
 async function getToken() {
-  const res = await request(app).post('/api/auth/login').send({ password: CORRECT_PASSWORD });
+  const res = await request(app).post('/api/auth/login').send({ email: TEST_EMAIL, password: TEST_PASSWORD });
   return res.body.token;
 }
 
@@ -18,6 +21,8 @@ describe('runs API (integration: real Postgres)', () => {
   let token;
 
   beforeAll(async () => {
+    const hash = await hashPassword(TEST_PASSWORD);
+    await createUser(TEST_EMAIL, hash, 'admin');
     token = await getToken();
   });
 
@@ -31,6 +36,7 @@ describe('runs API (integration: real Postgres)', () => {
       [REPO]
     );
     await pool.query('DELETE FROM triage_runs WHERE repo_full_name = $1', [REPO]);
+    await pool.query('DELETE FROM users WHERE email = $1', [TEST_EMAIL]);
     await triageQueue.close();
     await pool.end();
   });
@@ -66,6 +72,14 @@ describe('runs API (integration: real Postgres)', () => {
       expect(res.body.runs.map((r) => r.id)).toEqual([id2, id1]); // most recent first
       expect(res.body.runs[0].status).toBe('failed');
       expect(res.body.runs[1].status).toBe('success');
+    });
+
+    it('matches a partial repo name without the owner prefix', async () => {
+      const res = await request(app).get('/api/runs?repo=api-runs-test-repo').set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.runs.every((r) => r.repo_full_name === REPO)).toBe(true);
+      expect(res.body.total).toBeGreaterThan(0);
     });
 
     it('filters by status', async () => {
@@ -157,6 +171,79 @@ describe('runs API (integration: real Postgres)', () => {
 
     it('returns 404 for a nonexistent run', async () => {
       const res = await request(app).get('/api/runs/999999999').set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe('DELETE /api/runs/:id', () => {
+    it('deletes a run along with its llm_calls and pending_actions', async () => {
+      const runId = await startTriageRun({
+        installationId: 1,
+        repoFullName: REPO,
+        eventName: 'issues',
+        eventAction: 'opened',
+        deliveryId: 'runs-api-delete',
+        subjectType: 'issue',
+        subjectNumber: 4,
+      });
+      await recordLlmCall({
+        triageRunId: runId,
+        purpose: 'issue_classification',
+        provider: 'gemini',
+        model: 'gemini-1.5-flash',
+        promptTokens: 10,
+        completionTokens: 5,
+        estimatedCostUsd: 0.000001,
+      });
+      await createPendingAction({
+        triageRunId: runId,
+        installationId: 1,
+        repoFullName: REPO,
+        issueNumber: 4,
+        actionType: 'close_as_duplicate',
+        payload: {},
+      });
+
+      const res = await request(app).delete(`/api/runs/${runId}`).set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+      expect(res.body.deleted).toBe(true);
+
+      const getRes = await request(app).get(`/api/runs/${runId}`).set('Authorization', `Bearer ${token}`);
+      expect(getRes.status).toBe(404);
+
+      const llmRows = await pool.query('SELECT 1 FROM llm_calls WHERE triage_run_id = $1', [runId]);
+      const pendingRows = await pool.query('SELECT 1 FROM pending_actions WHERE triage_run_id = $1', [runId]);
+      expect(llmRows.rowCount).toBe(0);
+      expect(pendingRows.rowCount).toBe(0);
+    });
+
+    it('rejects a non-admin member', async () => {
+      const memberHash = await hashPassword('member-password-123');
+      await createUser('apiruns-member@example.com', memberHash, 'member');
+      const memberLogin = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'apiruns-member@example.com', password: 'member-password-123' });
+
+      const runId = await startTriageRun({
+        installationId: 1,
+        repoFullName: REPO,
+        eventName: 'issues',
+        eventAction: 'opened',
+        deliveryId: 'runs-api-delete-forbidden',
+        subjectType: 'issue',
+        subjectNumber: 4,
+      });
+
+      const res = await request(app)
+        .delete(`/api/runs/${runId}`)
+        .set('Authorization', `Bearer ${memberLogin.body.token}`);
+      expect(res.status).toBe(403);
+
+      await pool.query('DELETE FROM users WHERE email = $1', ['apiruns-member@example.com']);
+    });
+
+    it('returns 404 when deleting a nonexistent run', async () => {
+      const res = await request(app).delete('/api/runs/999999999').set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(404);
     });
   });

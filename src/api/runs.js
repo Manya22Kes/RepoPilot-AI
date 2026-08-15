@@ -1,7 +1,8 @@
 const express = require('express');
-const { listTriageRuns, getTriageRun } = require('../db/triageRuns');
+const { listTriageRuns, getTriageRun, deleteTriageRun } = require('../db/triageRuns');
 const { listLlmCallsForRun } = require('../db/llmCalls');
 const { listPendingActionsForRun } = require('../db/pendingActions');
+const { requireAdmin } = require('./auth');
 
 const router = express.Router();
 
@@ -39,6 +40,18 @@ router.get('/runs/:id', async (req, res, next) => {
     ]);
 
     return res.json({ run, llmCalls, pendingActions });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.delete('/runs/:id', requireAdmin, async (req, res, next) => {
+  try {
+    const deleted = await deleteTriageRun(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ error: 'Run not found' });
+    }
+    return res.json({ deleted: true });
   } catch (err) {
     return next(err);
   }

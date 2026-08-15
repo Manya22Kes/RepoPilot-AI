@@ -1,4 +1,5 @@
 const TOKEN_KEY = 'repopilot_dashboard_token';
+const USER_KEY = 'repopilot_dashboard_user';
 
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY);
@@ -10,6 +11,16 @@ export function setToken(token) {
 
 export function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+}
+
+export function getCurrentUser() {
+  const raw = localStorage.getItem(USER_KEY);
+  return raw ? JSON.parse(raw) : null;
+}
+
+export function setCurrentUser(user) {
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
 }
 
 class ApiError extends Error {
@@ -47,7 +58,12 @@ async function request(path, options = {}) {
 }
 
 export const api = {
-  login: (password) => request('/auth/login', { method: 'POST', body: JSON.stringify({ password }) }),
+  login: (email, password) => request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+
+  listUsers: () => request('/users'),
+  createUser: (email, password, role) =>
+    request('/users', { method: 'POST', body: JSON.stringify({ email, password, role }) }),
+  deleteUser: (id) => request(`/users/${id}`, { method: 'DELETE' }),
 
   listRepos: () => request('/repos'),
   getRepoSettings: (owner, repo) => request(`/repos/${owner}/${repo}/settings`),
@@ -67,6 +83,7 @@ export const api = {
     return request(`/runs?${params.toString()}`);
   },
   getRun: (id) => request(`/runs/${id}`),
+  deleteRun: (id) => request(`/runs/${id}`, { method: 'DELETE' }),
 
   listPendingActions: (status = 'pending_approval') => request(`/pending-actions?status=${status}`),
   approvePendingAction: (id) => request(`/pending-actions/${id}/approve`, { method: 'POST' }),

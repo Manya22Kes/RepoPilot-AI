@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { api } from '../api.js';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { api, getCurrentUser } from '../api.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 import CopyButton from '../components/CopyButton.jsx';
 
 export default function RunDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
+  const [deleteError, setDeleteError] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const isAdmin = getCurrentUser()?.role === 'admin';
 
   useEffect(() => {
     setData(null);
@@ -16,6 +20,19 @@ export default function RunDetailPage() {
       .then(setData)
       .catch((err) => setError(err.message));
   }, [id]);
+
+  async function handleDelete() {
+    if (!window.confirm(`Delete run #${id}? This can't be undone.`)) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await api.deleteRun(id);
+      navigate('/runs');
+    } catch (err) {
+      setDeleteError(err.message);
+      setDeleting(false);
+    }
+  }
 
   if (error) return <div style={{ color: 'var(--danger)' }}>{error}</div>;
   if (!data) return <div style={{ color: 'var(--text-tertiary)' }}>Loading…</div>;
@@ -33,7 +50,19 @@ export default function RunDetailPage() {
         <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Run #{run.id}</h1>
         <CopyButton value={String(run.id)} label="Copy ID" />
         <StatusBadge status={run.status} />
+        {isAdmin && (
+          <button
+            className="btn btn-danger"
+            style={{ marginLeft: 'auto', padding: '5px 12px', fontSize: 12.5 }}
+            disabled={deleting}
+            onClick={handleDelete}
+          >
+            {deleting ? 'Deleting…' : 'Delete run'}
+          </button>
+        )}
       </div>
+
+      {deleteError && <div style={{ color: 'var(--danger)', marginBottom: 16 }}>{deleteError}</div>}
 
       <div className="card" style={{ padding: 20, marginBottom: 20 }}>
         <dl style={{ display: 'grid', gridTemplateColumns: '160px 1fr', rowGap: 10, margin: 0, fontSize: 13.5 }}>

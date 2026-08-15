@@ -43,8 +43,8 @@ async function listTriageRuns({ repoFullName, status, search, limit = 50, offset
   const params = [];
 
   if (repoFullName) {
-    params.push(repoFullName);
-    conditions.push(`repo_full_name = $${params.length}`);
+    params.push(`%${repoFullName.trim()}%`);
+    conditions.push(`repo_full_name ILIKE $${params.length}`);
   }
   if (status) {
     params.push(status);
@@ -104,6 +104,24 @@ async function getRunStatsSince(days = 7) {
   };
 }
 
+async function deleteTriageRun(id) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    // No ON DELETE CASCADE on these FKs, so child rows must go first.
+    await client.query('DELETE FROM pending_actions WHERE triage_run_id = $1', [id]);
+    await client.query('DELETE FROM llm_calls WHERE triage_run_id = $1', [id]);
+    const { rowCount } = await client.query('DELETE FROM triage_runs WHERE id = $1', [id]);
+    await client.query('COMMIT');
+    return rowCount > 0;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 async function hasSuccessfulRun(deliveryId) {
   if (!deliveryId) return false;
   const { rows } = await pool.query(
@@ -121,4 +139,5 @@ module.exports = {
   hasSuccessfulRun,
   listTriageRuns,
   getRunStatsSince,
+  deleteTriageRun,
 };

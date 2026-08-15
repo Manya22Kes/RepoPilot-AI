@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../api.js';
+import { api, getCurrentUser } from '../api.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 
 const PAGE_SIZE = 25;
@@ -17,9 +17,11 @@ export default function RunsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
   const navigate = useNavigate();
+  const isAdmin = getCurrentUser()?.role === 'admin';
 
-  useEffect(() => {
+  function load() {
     setRuns(null);
     api
       .listRuns({
@@ -34,7 +36,24 @@ export default function RunsPage() {
         setTotal(data.total);
       })
       .catch((err) => setError(err.message));
-  }, [repoFilter, statusFilter, searchTerm, page]);
+  }
+
+  useEffect(load, [repoFilter, statusFilter, searchTerm, page]);
+
+  async function handleDelete(e, runId) {
+    e.stopPropagation();
+    if (!window.confirm(`Delete run #${runId}? This can't be undone.`)) return;
+
+    setDeletingId(runId);
+    try {
+      await api.deleteRun(runId);
+      load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -48,7 +67,7 @@ export default function RunsPage() {
       <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
         <input
           className="input"
-          placeholder="Filter by repo (owner/name)"
+          placeholder="Filter by repo (partial name OK)"
           value={repoFilter}
           onChange={(e) => {
             setPage(0);
@@ -94,19 +113,20 @@ export default function RunsPage() {
                 <th>Event</th>
                 <th>Status</th>
                 <th>Started</th>
+                {isAdmin && <th></th>}
               </tr>
             </thead>
             <tbody>
               {runs === null && (
                 <tr>
-                  <td colSpan={5} style={{ color: 'var(--text-tertiary)' }}>
+                  <td colSpan={isAdmin ? 6 : 5} style={{ color: 'var(--text-tertiary)' }}>
                     Loading…
                   </td>
                 </tr>
               )}
               {runs?.length === 0 && (
                 <tr>
-                  <td colSpan={5} style={{ color: 'var(--text-tertiary)' }}>
+                  <td colSpan={isAdmin ? 6 : 5} style={{ color: 'var(--text-tertiary)' }}>
                     No runs match these filters.
                   </td>
                 </tr>
@@ -129,6 +149,18 @@ export default function RunsPage() {
                     <StatusBadge status={run.status} />
                   </td>
                   <td style={{ color: 'var(--text-secondary)' }}>{formatTime(run.started_at)}</td>
+                  {isAdmin && (
+                    <td>
+                      <button
+                        className="btn btn-danger"
+                        style={{ padding: '3px 9px', fontSize: 12 }}
+                        disabled={deletingId === run.id}
+                        onClick={(e) => handleDelete(e, run.id)}
+                      >
+                        {deletingId === run.id ? 'Deleting…' : 'Delete'}
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
