@@ -1,6 +1,7 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { login, requireAuth } = require('./auth');
+const usersRouter = require('./users');
 const reposRouter = require('./repos');
 const runsRouter = require('./runs');
 const pendingActionsRouter = require('./pendingActions');
@@ -16,12 +17,14 @@ const loginLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
+  skipSuccessfulRequests: true,
   message: { error: 'Too many login attempts. Try again in a few minutes.' },
 });
 
 router.post('/auth/login', loginLimiter, login);
 
 router.use(requireAuth);
+router.use(usersRouter);
 router.use(reposRouter);
 router.use(runsRouter);
 router.use(pendingActionsRouter);

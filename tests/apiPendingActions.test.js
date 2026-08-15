@@ -13,8 +13,11 @@ const { triageQueue } = require('../src/queue/triageQueue');
 const { startTriageRun } = require('../src/db/triageRuns');
 const { createPendingAction } = require('../src/db/pendingActions');
 const pool = require('../src/db/pool');
+const { createUser } = require('../src/db/users');
+const { hashPassword } = require('../src/utils/passwords');
 
-const CORRECT_PASSWORD = 'test-admin-password';
+const TEST_EMAIL = 'apipendingactions-test@example.com';
+const TEST_PASSWORD = 'test-admin-password';
 const REPO = 'acme/api-pending-actions-test';
 
 function fakeHttpResponse(body, status = 200) {
@@ -22,7 +25,7 @@ function fakeHttpResponse(body, status = 200) {
 }
 
 async function getToken() {
-  const res = await request(app).post('/api/auth/login').send({ password: CORRECT_PASSWORD });
+  const res = await request(app).post('/api/auth/login').send({ email: TEST_EMAIL, password: TEST_PASSWORD });
   return res.body.token;
 }
 
@@ -52,6 +55,8 @@ describe('pending-actions API (integration: real Postgres, mocked GitHub)', () =
   let requests;
 
   beforeAll(async () => {
+    const hash = await hashPassword(TEST_PASSWORD);
+    await createUser(TEST_EMAIL, hash, 'admin');
     token = await getToken();
   });
 
@@ -83,6 +88,7 @@ describe('pending-actions API (integration: real Postgres, mocked GitHub)', () =
       [REPO]
     );
     await pool.query('DELETE FROM triage_runs WHERE repo_full_name = $1', [REPO]);
+    await pool.query('DELETE FROM users WHERE email = $1', [TEST_EMAIL]);
     await triageQueue.close();
     await pool.end();
   });

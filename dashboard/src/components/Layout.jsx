@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { NavLink, useNavigate, Outlet, useLocation } from 'react-router-dom';
-import { clearToken } from '../api.js';
+import { clearToken, getCurrentUser } from '../api.js';
 import Logo from './Logo.jsx';
 
-const NAV_ITEMS = [
+const BASE_NAV_ITEMS = [
   { to: '/repos', label: 'Repos' },
   { to: '/runs', label: 'Runs' },
   { to: '/approvals', label: 'Approvals' },
@@ -14,6 +14,8 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const currentUser = getCurrentUser();
+  const navItems = currentUser?.role === 'admin' ? [...BASE_NAV_ITEMS, { to: '/users', label: 'Users' }] : BASE_NAV_ITEMS;
 
   function handleLogout() {
     clearToken();
@@ -45,7 +47,7 @@ export default function Layout() {
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

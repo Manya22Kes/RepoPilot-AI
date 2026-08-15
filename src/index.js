@@ -9,6 +9,7 @@ const logger = require("./utils/logger");
 const pool = require("./db/pool");
 const redisConnection = require("./queue/connection");
 const { checkHealth } = require("./utils/healthCheck");
+const { bootstrapAdminIfNeeded } = require("./auth/bootstrapAdmin");
 
 const app = express();
 
@@ -46,6 +47,9 @@ if (fs.existsSync(dashboardDistPath)) {
 
 /* istanbul ignore next -- exercised via integration/manual testing, not unit tests */
 if (require.main === module) {
+  bootstrapAdminIfNeeded().catch((err) => {
+    logger.error('Failed to bootstrap initial admin user', { error: err.message });
+  });
   app.listen(config.port, () => {
     logger.info(`GitHub Ops Agent listening on port ${config.port}`, {
       env: config.nodeEnv,

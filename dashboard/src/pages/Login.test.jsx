@@ -10,22 +10,22 @@ describe('Login page', () => {
     global.fetch = vi.fn();
   });
 
-  it('renders a password field and a sign-in button', () => {
+  it('renders email and password fields and a sign-in button', () => {
     render(
       <MemoryRouter>
         <Login />
       </MemoryRouter>
     );
-
-    expect(screen.getByLabelText(/admin password/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^password/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
   });
 
-  it('stores the token and shows no error on a successful login', async () => {
+  it('stores the token and user on a successful login', async () => {
     global.fetch.mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => ({ token: 'a-real-looking-token', expiresIn: '12h' }),
+      json: async () => ({ token: 'a-real-looking-token', expiresIn: '12h', user: { id: 1, email: 'a@b.com', role: 'admin' } }),
     });
 
     render(
@@ -34,7 +34,8 @@ describe('Login page', () => {
       </MemoryRouter>
     );
 
-    fireEvent.change(screen.getByLabelText(/admin password/i), { target: { value: 'correct-password' } });
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'a@b.com' } });
+    fireEvent.change(screen.getByLabelText(/^password/i), { target: { value: 'correct-password' } });
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => expect(getToken()).toBe('a-real-looking-token'));
@@ -45,7 +46,7 @@ describe('Login page', () => {
     global.fetch.mockResolvedValue({
       ok: false,
       status: 401,
-      json: async () => ({ error: 'Invalid password' }),
+      json: async () => ({ error: 'Invalid email or password' }),
     });
 
     render(
@@ -54,10 +55,11 @@ describe('Login page', () => {
       </MemoryRouter>
     );
 
-    fireEvent.change(screen.getByLabelText(/admin password/i), { target: { value: 'wrong' } });
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'a@b.com' } });
+    fireEvent.change(screen.getByLabelText(/^password/i), { target: { value: 'wrong' } });
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
-    expect(await screen.findByText(/invalid password/i)).toBeInTheDocument();
+    expect(await screen.findByText(/invalid email or password/i)).toBeInTheDocument();
     expect(getToken()).toBeNull();
   });
 });

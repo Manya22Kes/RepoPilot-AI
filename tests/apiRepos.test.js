@@ -11,8 +11,11 @@ const request = require('supertest');
 const app = require('../src/index');
 const { triageQueue } = require('../src/queue/triageQueue');
 const pool = require('../src/db/pool');
+const { createUser } = require('../src/db/users');
+const { hashPassword } = require('../src/utils/passwords');
 
-const CORRECT_PASSWORD = 'test-admin-password';
+const TEST_EMAIL = 'apirepos-test@example.com';
+const TEST_PASSWORD = 'test-admin-password';
 const REPO = 'acme/api-test-repo';
 
 function fakeHttpResponse(body, status = 200) {
@@ -20,7 +23,7 @@ function fakeHttpResponse(body, status = 200) {
 }
 
 async function getToken() {
-  const res = await request(app).post('/api/auth/login').send({ password: CORRECT_PASSWORD });
+  const res = await request(app).post('/api/auth/login').send({ email: TEST_EMAIL, password: TEST_PASSWORD });
   return res.body.token;
 }
 
@@ -28,6 +31,8 @@ describe('repos API (integration: real Postgres, mocked GitHub)', () => {
   let token;
 
   beforeAll(async () => {
+    const hash = await hashPassword(TEST_PASSWORD);
+    await createUser(TEST_EMAIL, hash, 'admin');
     token = await getToken();
   });
 
@@ -36,6 +41,7 @@ describe('repos API (integration: real Postgres, mocked GitHub)', () => {
   });
 
   afterAll(async () => {
+    await pool.query('DELETE FROM users WHERE email = $1', [TEST_EMAIL]);
     await triageQueue.close();
     await pool.end();
   });

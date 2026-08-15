@@ -1,28 +1,39 @@
-const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const config = require('../config');
 const logger = require('../utils/logger');
+const { getUserByEmail } = require('../db/users');
+const { verifyPassword } = require('../utils/passwords');
 
 const TOKEN_LIFETIME = '12h';
 
-function passwordsMatch(candidate, expected) {
-  const candidateBuffer = Buffer.from(candidate || '');
-  const expectedBuffer = Buffer.from(expected);
-  return (
-    candidateBuffer.length === expectedBuffer.length && crypto.timingSafeEqual(candidateBuffer, expectedBuffer)
-  );
-}
+async function login(req, res) {
+  const { email, password } = req.body || {};
 
-function login(req, res) {
-  const { password } = req.body || {};
-
-  if (!passwordsMatch(password, config.dashboard.adminPassword)) {
-    logger.warn('Dashboard login failed');
-    return res.status(401).json({ error: 'Invalid password' });
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required' });
   }
 
-  const token = jwt.sign({ role: 'admin' }, config.dashboard.jwtSecret, { expiresIn: TOKEN_LIFETIME });
-  return res.json({ token, expiresIn: TOKEN_LIFETIME });
+  const user = await getUserByEmail(email);
+
+  // Same generic error whether the email doesn't exist or the password
+  // is wrong — never reveal which, so a failed login can't be used to
+  // discover which emails have accounts.
+  if (!user || !(await verifyPassword(password, user.password_hash))) {
+    logger.warn('Dashboard login failed', { email });
+    return res.status(401).json({ error: 'Invalid email or password' });
+  }
+
+  const token = jwt.sign(
+    { userId: user.id, email: user.email, role: user.role },
+    config.dashboard.jwtSecret,
+    { expiresIn: TOKEN_LIFETIME }
+  );
+
+  return res.json({
+    token,
+    expiresIn: TOKEN_LIFETIME,
+    user: { id: user.id, email: user.email, role: user.role },
+  });
 }
 
 function requireAuth(req, res, next) {
@@ -41,4 +52,11 @@ function requireAuth(req, res, next) {
   }
 }
 
-module.exports = { login, requireAuth, passwordsMatch };
+function requireAdmin(req, res, next) {
+  if (req.user?.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  return next();
+}
+
+module.exports = { login, requireAuth, requireAdmin };

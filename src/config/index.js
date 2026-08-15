@@ -73,6 +73,7 @@ function loadConfig() {
       renudgeDays: Number(process.env.STALE_PR_RENUDGE_DAYS) || 7,
     },
     dashboard: {
+      adminEmail: process.env.DASHBOARD_ADMIN_EMAIL || "admin@repopilot.local",
       adminPassword: required("DASHBOARD_ADMIN_PASSWORD"),
       jwtSecret: required("DASHBOARD_JWT_SECRET"),
     },

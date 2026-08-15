@@ -82,14 +82,14 @@ describe('api request wrapper', () => {
     expect(getToken()).toBeNull();
   });
 
-  it('login posts the password and returns the parsed body', async () => {
+  it('login posts the email and password and returns the parsed body', async () => {
     global.fetch.mockResolvedValue(fakeResponse({ token: 'new-token', expiresIn: '12h' }));
 
-    const result = await api.login('secret');
+    const result = await api.login('a@b.com', 'secret');
 
     const [url, options] = global.fetch.mock.calls[0];
     expect(url).toBe('/api/auth/login');
-    expect(JSON.parse(options.body)).toEqual({ password: 'secret' });
+    expect(JSON.parse(options.body)).toEqual({ email: 'a@b.com', password: 'secret' });
     expect(result).toEqual({ token: 'new-token', expiresIn: '12h' });
   });
 });
