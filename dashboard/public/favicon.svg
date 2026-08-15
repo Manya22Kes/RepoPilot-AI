@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#5fb0f0"/>
-      <stop offset="100%" stop-color="#d1548f"/>
-    </linearGradient>
+    <clipPath id="badgeClip">
+      <rect x="4" y="4" width="92" height="92" rx="24"/>
+    </clipPath>
   </defs>
-  <rect x="4" y="4" width="92" height="92" rx="24" fill="url(#g)"/>
-  <path d="M 85 22 L 15 50 L 46 58 Z" fill="#ffffff"/>
-  <path d="M 46 58 L 15 50 L 36 78 Z" fill="#ff9fc7"/>
+  <rect x="4" y="4" width="92" height="92" rx="24" fill="#5e94c2"/>
+  <polygon points="96,4 96,96 4,96" fill="#864a65" clip-path="url(#badgeClip)"/>
+  <path d="M 88 18 L 10 50 L 45 59 Z" fill="#ffffff"/>
+  <path d="M 45 59 L 10 50 L 33 82 Z" fill="#bd7c98"/>
 </svg>
