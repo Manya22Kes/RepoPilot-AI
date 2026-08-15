@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, getCurrentUser } from '../api.js';
 import StatusBadge from '../components/StatusBadge.jsx';
+import { formatDateTime } from '../utils/formatDate.js';
 
 const PAGE_SIZE = 25;
 
 function formatTime(iso) {
-  return new Date(iso).toLocaleString();
+  return formatDateTime(iso);
 }
 
 export default function RunsPage() {

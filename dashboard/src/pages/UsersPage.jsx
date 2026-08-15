@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, getCurrentUser } from '../api.js';
+import { formatDate } from '../utils/formatDate.js';
 
 export default function UsersPage() {
   const [users, setUsers] = useState(null);
@@ -86,37 +87,39 @@ export default function UsersPage() {
       </div>
 
       <div className="card">
-        <table>
-          <thead>
-            <tr>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Added</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {users === null && (
+        <div className="table-scroll">
+          <table>
+            <thead>
               <tr>
-                <td colSpan={4} style={{ color: 'var(--text-tertiary)' }}>Loading…</td>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Added</th>
+                <th></th>
               </tr>
-            )}
-            {users?.map((u) => (
-              <tr key={u.id}>
-                <td className="mono">{u.email}</td>
-                <td>{u.role}</td>
-                <td style={{ color: 'var(--text-secondary)' }}>{new Date(u.created_at).toLocaleDateString()}</td>
-                <td>
-                  {u.id !== currentUser?.id && (
-                    <button className="btn btn-danger" style={{ padding: '3px 9px', fontSize: 12 }} onClick={() => handleDelete(u.id)}>
-                      Remove
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {users === null && (
+                <tr>
+                  <td colSpan={4} style={{ color: 'var(--text-tertiary)' }}>Loading…</td>
+                </tr>
+              )}
+              {users?.map((u) => (
+                <tr key={u.id}>
+                  <td className="mono">{u.email}</td>
+                  <td>{u.role}</td>
+                  <td style={{ color: 'var(--text-secondary)' }}>{formatDate(u.created_at)}</td>
+                  <td>
+                    {u.id !== currentUser?.id && (
+                      <button className="btn btn-danger" style={{ padding: '3px 9px', fontSize: 12 }} onClick={() => handleDelete(u.id)}>
+                        Remove
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

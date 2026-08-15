@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api, getCurrentUser } from '../api.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 import CopyButton from '../components/CopyButton.jsx';
+import { formatDateTime } from '../utils/formatDate.js';
 
 export default function RunDetailPage() {
   const { id } = useParams();
@@ -46,7 +47,7 @@ export default function RunDetailPage() {
         ← All runs
       </Link>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '10px 0 24px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12, margin: '10px 0 24px' }}>
         <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Run #{run.id}</h1>
         <CopyButton value={String(run.id)} label="Copy ID" />
         <StatusBadge status={run.status} />
@@ -83,10 +84,10 @@ export default function RunDetailPage() {
           </dd>
 
           <dt style={{ color: 'var(--text-secondary)' }}>Started</dt>
-          <dd style={{ margin: 0 }}>{new Date(run.started_at).toLocaleString()}</dd>
+          <dd style={{ margin: 0 }}>{formatDateTime(run.started_at)}</dd>
 
           <dt style={{ color: 'var(--text-secondary)' }}>Finished</dt>
-          <dd style={{ margin: 0 }}>{run.finished_at ? new Date(run.finished_at).toLocaleString() : '—'}</dd>
+          <dd style={{ margin: 0 }}>{run.finished_at ? formatDateTime(run.finished_at) : '—'}</dd>
 
           {run.error && (
             <>
@@ -113,28 +114,30 @@ export default function RunDetailPage() {
         {llmCalls.length === 0 ? (
           <p style={{ color: 'var(--text-tertiary)', margin: 0, fontSize: 13 }}>No LLM calls recorded for this run.</p>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Purpose</th>
-                <th>Provider / model</th>
-                <th>Tokens</th>
-                <th>Cost</th>
-              </tr>
-            </thead>
-            <tbody>
-              {llmCalls.map((call) => (
-                <tr key={call.id}>
-                  <td>{call.purpose}</td>
-                  <td className="mono">{call.provider} / {call.model}</td>
-                  <td className="mono">
-                    {call.prompt_tokens ?? '—'} / {call.completion_tokens ?? '—'}
-                  </td>
-                  <td className="mono">{call.estimated_cost_usd !== null ? `$${Number(call.estimated_cost_usd).toFixed(6)}` : '—'}</td>
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Purpose</th>
+                  <th>Provider / model</th>
+                  <th>Tokens</th>
+                  <th>Cost</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {llmCalls.map((call) => (
+                  <tr key={call.id}>
+                    <td>{call.purpose}</td>
+                    <td className="mono">{call.provider} / {call.model}</td>
+                    <td className="mono">
+                      {call.prompt_tokens ?? '—'} / {call.completion_tokens ?? '—'}
+                    </td>
+                    <td className="mono">{call.estimated_cost_usd !== null ? `$${Number(call.estimated_cost_usd).toFixed(6)}` : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
@@ -143,28 +146,30 @@ export default function RunDetailPage() {
         {pendingActions.length === 0 ? (
           <p style={{ color: 'var(--text-tertiary)', margin: 0, fontSize: 13 }}>None recorded for this run.</p>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Payload</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pendingActions.map((action) => (
-                <tr key={action.id}>
-                  <td>{action.action_type}</td>
-                  <td>
-                    <StatusBadge status={action.status} />
-                  </td>
-                  <td className="mono" style={{ fontSize: 12 }}>
-                    {JSON.stringify(action.payload)}
-                  </td>
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Payload</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {pendingActions.map((action) => (
+                  <tr key={action.id}>
+                    <td>{action.action_type}</td>
+                    <td>
+                      <StatusBadge status={action.status} />
+                    </td>
+                    <td className="mono" style={{ fontSize: 12 }}>
+                      {JSON.stringify(action.payload)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>
