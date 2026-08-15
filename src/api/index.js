@@ -6,6 +6,7 @@ const reposRouter = require('./repos');
 const runsRouter = require('./runs');
 const pendingActionsRouter = require('./pendingActions');
 const costsRouter = require('./costs');
+const digestsRouter = require('./digests');
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -29,6 +30,7 @@ router.use(reposRouter);
 router.use(runsRouter);
 router.use(pendingActionsRouter);
 router.use(costsRouter);
+router.use(digestsRouter);
 
 // eslint-disable-next-line no-unused-vars
 router.use((err, req, res, next) => {

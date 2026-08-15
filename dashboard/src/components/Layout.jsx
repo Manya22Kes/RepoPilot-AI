@@ -8,6 +8,7 @@ const BASE_NAV_ITEMS = [
   { to: '/runs', label: 'Runs' },
   { to: '/approvals', label: 'Approvals' },
   { to: '/costs', label: 'Costs' },
+  { to: '/digests', label: 'Digests' },
 ];
 
 export default function Layout() {

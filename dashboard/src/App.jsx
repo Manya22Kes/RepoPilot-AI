@@ -10,6 +10,7 @@ import RunDetailPage from './pages/RunDetailPage.jsx';
 import ApprovalsPage from './pages/ApprovalsPage.jsx';
 import CostsPage from './pages/CostsPage.jsx';
 import UsersPage from './pages/UsersPage.jsx';
+import DigestsPage from './pages/DigestsPage.jsx';
 
 function RequireAuth({ children }) {
   if (!getToken()) {
@@ -42,6 +43,7 @@ export default function App() {
             <Route path="/approvals" element={<ApprovalsPage />} />
             <Route path="/costs" element={<CostsPage />} />
             <Route path="/users" element={<UsersPage />} />
+            <Route path="/digests" element={<DigestsPage />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

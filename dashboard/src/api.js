@@ -90,6 +90,8 @@ export const api = {
   rejectPendingAction: (id) => request(`/pending-actions/${id}/reject`, { method: 'POST' }),
 
   getCostSummary: (days = 30) => request(`/costs/summary?days=${days}`),
+
+  listDigests: (limit = 20) => request(`/digests?limit=${limit}`),
 };
 
 export { ApiError };
