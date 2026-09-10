@@ -163,7 +163,15 @@ export default function ReposPage() {
               )}
               {repos?.map((repo) => (
                 <tr key={repo.repoFullName}>
-                  <td className="mono">{repo.repoFullName}</td>
+                  <td className="mono">
+                    <a
+                      href={`https://github.com/${repo.repoFullName}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {repo.repoFullName}
+                    </a>
+                  </td>
                   <td>
                     <LabelsCell repo={repo} onSave={(labels) => handleLabelsChange(repo, labels)} />
                   </td>
